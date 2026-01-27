@@ -11,6 +11,7 @@ from src.core.version import print_version_banner
 
 def main():
     print_version_banner()
+    print("\n>>> System Update Detected: This is Version 2.0.0 <<<\n")
     parser = argparse.ArgumentParser(description="SIYI/Hailo Tracking System")
     parser.add_argument("--mode", default="debug", choices=["debug", "production"], help="Operation mode")
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
