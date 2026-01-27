@@ -15,26 +15,21 @@ def get_version():
     return "unknown"
 
 def check_for_updates():
-    """Checks if a newer version exists on GitHub remote"""
-    import subprocess
+    """Checks if a newer version exists on GitHub using Web API (No Git required)"""
+    import requests
+    # Use the Raw GitHub URL to get the VERSION file directly
+    REPO_URL = "https://raw.githubusercontent.com/Mayuri-kub-26/Tracker/master/VERSION"
+    
     try:
-        # Fetch latest info from remote (non-blocking as much as possible)
-        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
-        # 1. Fetch origin
-        subprocess.run(["git", "fetch", "origin"], cwd=root, capture_output=True, timeout=5)
-        
-        # 2. Get remote version from VERSION file on master
-        remote_version = subprocess.run(
-            ["git", "show", "origin/master:VERSION"], 
-            cwd=root, capture_output=True, text=True, timeout=3
-        ).stdout.strip()
-        
-        local_version = get_version()
-        
-        if remote_version and remote_version != local_version:
-            return remote_version
-    except Exception:
+        response = requests.get(REPO_URL, timeout=5)
+        if response.status_code == 200:
+            remote_version = response.text.strip()
+            local_version = get_version()
+            
+            if remote_version and remote_version != local_version:
+                return remote_version
+    except Exception as e:
+        # Silently fail if no internet
         pass
     return None
 
