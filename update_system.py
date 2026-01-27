@@ -11,25 +11,36 @@ def run_command(command):
         return None
 
 def update_system():
-    print("Checking for updates (OTA simulation)...")
+    print("Checking for updates via Git (OTA)...")
     
-    # In a real scenario, this would be:
-    # run_command(["git", "pull", "origin", "master"])
+    # Ensure we are on the right branch
+    branch = run_command("git rev-parse --abbrev-ref HEAD")
+    if not branch:
+        print("Error: Could not determine current branch.")
+        return
+
+    print(f"Current branch: {branch}")
     
-    # For now, we simulate by checking the VERSION file
-    version_file = "VERSION"
-    if os.path.exists(version_file):
-        with open(version_file, "r") as f:
-            old_version = f.read().strip()
-        
-        print(f"Current System Version: {old_version}")
-        
-        # User requested to show "v1", "v2" logic
-        # If we were actually pulling, we'd see the new VERSION file content here.
-        print("\n[OTA] Update sequence completed.")
-        print("System is up to date.")
+    # Perform git pull
+    print("Fetching latest changes from origin...")
+    output = run_command(f"git pull origin {branch}")
+    
+    if output:
+        print(f"Git Output: {output}")
+        if "Already up to date." in output:
+            print("System is already at the latest version.")
+        else:
+            # Re-read version after pull
+            version = "unknown"
+            if os.path.exists("VERSION"):
+                with open("VERSION", "r") as f:
+                    version = f.read().strip()
+            print(f"\n[OTA] Update Successful! New Version: {version}")
+            print("Please restart the application to apply changes.")
+            return True
     else:
-        print("Error: VERSION file not found.")
+        print("OTA Update failed. Check your internet connection and Git remote settings.")
+        return False
 
 if __name__ == "__main__":
     update_system()

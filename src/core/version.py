@@ -1,4 +1,5 @@
 import os
+import sys
 
 def get_version():
     """Reads version from VERSION file at project root"""
@@ -13,8 +14,47 @@ def get_version():
         pass
     return "unknown"
 
+def check_for_updates():
+    """Checks if a newer version exists on GitHub remote"""
+    import subprocess
+    try:
+        # Fetch latest info from remote (non-blocking as much as possible)
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        # 1. Fetch origin
+        subprocess.run(["git", "fetch", "origin"], cwd=root, capture_output=True, timeout=5)
+        
+        # 2. Get remote version from VERSION file on master
+        remote_version = subprocess.run(
+            ["git", "show", "origin/master:VERSION"], 
+            cwd=root, capture_output=True, text=True, timeout=3
+        ).stdout.strip()
+        
+        local_version = get_version()
+        
+        if remote_version and remote_version != local_version:
+            return remote_version
+    except Exception:
+        pass
+    return None
+
 def print_version_banner():
     version = get_version()
     print("=" * 40)
     print(f"  TRACKER SYSTEM - VERSION {version}")
     print("=" * 40)
+
+def handle_interactive_update(new_version):
+    """Asks user if they want to update and executes it"""
+    choice = input(f"\n[!] A new version ({new_version}) is available. Update now? (y/n): ").lower()
+    if choice == 'y':
+        # Import here to avoid circular dependencies
+        try:
+            from update_system import update_system
+            if update_system():
+                print("\n[SUCCESS] System updated. Please restart to finish.")
+                sys.exit(0)
+        except ImportError:
+            print("[ERROR] Update script not found at project root.")
+    else:
+        print("Continuing with current version...\n")

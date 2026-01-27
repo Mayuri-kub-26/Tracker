@@ -7,11 +7,17 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from src.core.config import cfg
 from src.core.app import TrackingApp
-from src.core.version import print_version_banner
+from src.core.version import print_version_banner, check_for_updates, handle_interactive_update
 
 def main():
     print_version_banner()
-    print("\n>>> System Update Detected: This is Version 2.0.0 <<<\n")
+    
+    # Check for hardware/software updates via GitHub
+    new_ver = check_for_updates()
+    if new_ver:
+        handle_interactive_update(new_ver)
+        
+    print("\n>>> System Update Detected: This is Version 3.0.0 <<<\n")
     parser = argparse.ArgumentParser(description="SIYI/Hailo Tracking System")
     parser.add_argument("--mode", default="debug", choices=["debug", "production"], help="Operation mode")
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
