@@ -1,4 +1,4 @@
-import subprocess
+qimport subprocess
 import os
 import sys
 
