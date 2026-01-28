@@ -50,14 +50,17 @@ def get_git_remote_status(running_hash=None):
         
         # 3. Same-Machine Detection: If disk code (local_hash) is newer than memory code (running_hash)
         if running_hash and running_hash != "unknown" and running_hash != local_hash:
+            # Look inside the new VERSION file on disk
+            new_v = get_local_version()
             print(f"[OTA] Local Changes Detected: Memory({running_hash[:7]}) != Disk({local_hash[:7]})")
-            return True
+            return new_v
 
         # 4. Standard Remote Detection: If local branch is behind remote tracking branch
         if local_hash != remote_hash:
             base = subprocess.check_output(["git", "merge-base", "HEAD", "@{u}"], text=True).strip()
             if base == local_hash:
                 print(f"[OTA] Remote Update Detected: Local({local_hash[:7]}) -> Remote({remote_hash[:7]})")
+                # We return True which check_for_stable_update handles as "git"
                 return True
         return False
     except Exception as e:
@@ -77,11 +80,12 @@ def sync_git():
 def check_for_stable_update(running_hash=None):
     # If we are in a Git repo, check Git status instead of Releases API
     if is_git_repo():
-        if get_git_remote_status(running_hash):
+        remote_status = get_git_remote_status(running_hash)
+        if remote_status:
             print("[OTA] Mode: Git Sync | Status: Updates Available")
-            return "git", "git"
+            # remote_status could be True or a Version String
+            return ("git" if remote_status is True else remote_status), "git"
         else:
-            # print("[OTA] Mode: Git Sync | Status: Up to date") # Minimize spam
             return None, None
 
     # Fallback to Binary/ZIP mode for non-git environments
@@ -158,9 +162,10 @@ def perform_upgrade(download_url, new_version):
 
 def main():
     mode = "Git Sync" if is_git_repo() else "Standalone"
+    start_version = get_local_version()
     print("="*50)
     print(f"    Tracker PROFESSIONAL LAUNCHER ({mode})")
-    print(f"    Current Version: v{get_local_version()}")
+    print(f"    Current Version: v{start_version}")
     print("="*50)
 
     # Capture the commit hash we are STARTING with
@@ -172,6 +177,8 @@ def main():
         # 1. Update Check (before starting)
         v, url = check_for_stable_update(running_hash)
         if v and url:
+            new_v_str = f"v{v}" if v != "git" else "latest"
+            print(f"\n[OTA] Updating from v{start_version} to {new_v_str}...")
             if perform_upgrade(url, v):
                 print("[OTA] Restarting Session...")
                 # Re-exec to apply changes
@@ -199,7 +206,9 @@ def main():
                 # Pass running_hash to detect if disk version changed
                 v, url = check_for_stable_update(running_hash)
                 if v and url:
+                    new_v_str = f"v{v}" if v != "git" else "latest"
                     print(f"\n[!] HOT RELOAD: Synced changes detected.")
+                    print(f"[OTA] Transitioning from v{start_version} to {new_v_str}...")
                     app_process.terminate()
                     app_process.wait()
                     perform_upgrade(url, v)
