@@ -2,6 +2,20 @@ import argparse
 import sys
 import os
 
+from pathlib import Path
+
+def read_version():
+    try:
+        return Path("VERSION").read_text().strip()
+    except:
+        return "unknown"
+
+print("=================================")
+print("Running Tracker Version:", read_version())
+print("This is the new version for demo purposes")
+print("=================================")
+
+
 # Ensure src is in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
