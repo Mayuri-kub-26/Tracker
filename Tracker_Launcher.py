@@ -29,50 +29,59 @@ def is_git_repo():
     """Checks if the current folder is a Git repository."""
     return os.path.exists(".git")
 
-def get_git_remote_status():
-    """Checks if there are new commits on the remote branch using commit hashes."""
+def get_current_hash():
+    """Gets the hash of the current local HEAD."""
+    if not is_git_repo(): return "unknown"
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except:
+        return "unknown"
+
+def get_git_remote_status(running_hash=None):
+    """Checks if there are new commits on the remote branch or if disk version changed."""
     if not is_git_repo(): return False
     try:
-        # Fetch current status from remote
+        # 1. Fetch current status from remote
         subprocess.run(["git", "fetch"], check=True, capture_output=True)
         
-        # Get the hash of local HEAD
-        local_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        # Get the hash of the remote tracking branch (upstream)
+        # 2. Get the latest hashes
+        local_hash = get_current_hash()
         remote_hash = subprocess.check_output(["git", "rev-parse", "@{u}"], text=True).strip()
         
-        # If hashes are different, check if remote has the local hash as an ancestor 
-        # (This confirms we are 'behind' and not just 'diverged')
+        # 3. Same-Machine Detection: If disk code (local_hash) is newer than memory code (running_hash)
+        if running_hash and running_hash != "unknown" and running_hash != local_hash:
+            print(f"[OTA] Local Changes Detected: Memory({running_hash[:7]}) != Disk({local_hash[:7]})")
+            return True
+
+        # 4. Standard Remote Detection: If local branch is behind remote tracking branch
         if local_hash != remote_hash:
-            # Check if local is behind remote (merge-base should be local commit)
             base = subprocess.check_output(["git", "merge-base", "HEAD", "@{u}"], text=True).strip()
             if base == local_hash:
-                print(f"[OTA] Update Detected: Local({local_hash[:7]}) -> Remote({remote_hash[:7]})")
+                print(f"[OTA] Remote Update Detected: Local({local_hash[:7]}) -> Remote({remote_hash[:7]})")
                 return True
         return False
     except Exception as e:
-        # print(f"[DEBUG] Git check failed: {e}") # Silent fail to avoid spam
         return False
 
 def sync_git():
     """Performs a git pull and returns success."""
-    print("[GIT] New changes detected on GitHub. Pulling code...")
+    print("[GIT] New changes detected. Syncing code...")
     try:
         subprocess.run(["git", "pull"], check=True)
-        print("[GIT] Successfully synced with GitHub.")
+        print("[GIT] Successfully synced.")
         return True
     except Exception as e:
         print(f"[GIT] Sync failed: {e}")
         return False
 
-def check_for_stable_update():
+def check_for_stable_update(running_hash=None):
     # If we are in a Git repo, check Git status instead of Releases API
     if is_git_repo():
-        if get_git_remote_status():
+        if get_git_remote_status(running_hash):
             print("[OTA] Mode: Git Sync | Status: Updates Available")
             return "git", "git"
         else:
-            print("[OTA] Mode: Git Sync | Status: Up to date")
+            # print("[OTA] Mode: Git Sync | Status: Up to date") # Minimize spam
             return None, None
 
     # Fallback to Binary/ZIP mode for non-git environments
@@ -154,9 +163,14 @@ def main():
     print(f"    Current Version: v{get_local_version()}")
     print("="*50)
 
+    # Capture the commit hash we are STARTING with
+    running_hash = get_current_hash()
+    if running_hash != "unknown":
+        print(f"[LAUNCHER] Running Version Hash: {running_hash[:7]}")
+
     while True:
-        # 1. Update Check
-        v, url = check_for_stable_update()
+        # 1. Update Check (before starting)
+        v, url = check_for_stable_update(running_hash)
         if v and url:
             if perform_upgrade(url, v):
                 print("[OTA] Restarting Session...")
@@ -165,10 +179,6 @@ def main():
 
         # 2. Start Application
         print(f"\n[LAUNCHER] Starting {REPO_NAME}...")
-        
-        # Priority Logic:
-        # - If in Git Mode: Always run Source (src/main.py) to see instant changes.
-        # - If in Standalone Mode: Try Binary (exe) first, then fallback to Source.
         
         should_run_source = is_git_repo()
         exe_path = os.path.join("dist", "TrackerApp", APP_EXE_NAME)
@@ -186,9 +196,10 @@ def main():
         last_check = time.time()
         while app_process.poll() is None:
             if time.time() - last_check > CHECK_INTERVAL:
-                v, url = check_for_stable_update()
+                # Pass running_hash to detect if disk version changed
+                v, url = check_for_stable_update(running_hash)
                 if v and url:
-                    print(f"\n[!] HOT RELOAD: Synced changes from GitHub.")
+                    print(f"\n[!] HOT RELOAD: Synced changes detected.")
                     app_process.terminate()
                     app_process.wait()
                     perform_upgrade(url, v)
