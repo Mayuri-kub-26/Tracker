@@ -12,7 +12,7 @@ REPO_OWNER = "Mayuri-kub-26"
 REPO_NAME = "Tracker"
 RELEASE_API_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases/latest"
 APP_EXE_NAME = "TrackerApp.exe" if os.name == 'nt' else "TrackerApp"
-CHECK_INTERVAL = 300 # 5 minutes
+CHECK_INTERVAL = 20 
 
 def get_local_version():
     """Reads the version file from the root or src directory."""
