@@ -30,15 +30,28 @@ def is_git_repo():
     return os.path.exists(".git")
 
 def get_git_remote_status():
-    """Checks if there are new commits on the remote branch."""
+    """Checks if there are new commits on the remote branch using commit hashes."""
     if not is_git_repo(): return False
     try:
-        # Fetch status from remote
+        # Fetch current status from remote
         subprocess.run(["git", "fetch"], check=True, capture_output=True)
-        # Compare local head with remote
-        result = subprocess.run(["git", "status", "-uno"], check=True, capture_output=True, text=True)
-        return "Your branch is behind" in result.stdout
-    except:
+        
+        # Get the hash of local HEAD
+        local_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        # Get the hash of the remote tracking branch (upstream)
+        remote_hash = subprocess.check_output(["git", "rev-parse", "@{u}"], text=True).strip()
+        
+        # If hashes are different, check if remote has the local hash as an ancestor 
+        # (This confirms we are 'behind' and not just 'diverged')
+        if local_hash != remote_hash:
+            # Check if local is behind remote (merge-base should be local commit)
+            base = subprocess.check_output(["git", "merge-base", "HEAD", "@{u}"], text=True).strip()
+            if base == local_hash:
+                print(f"[OTA] Update Detected: Local({local_hash[:7]}) -> Remote({remote_hash[:7]})")
+                return True
+        return False
+    except Exception as e:
+        # print(f"[DEBUG] Git check failed: {e}") # Silent fail to avoid spam
         return False
 
 def sync_git():
