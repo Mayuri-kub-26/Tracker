@@ -42,6 +42,10 @@ class TrackingApp:
         self.current_mouse_point = None
         self.is_dragging = False
         
+        # Update State
+        self.last_update_check = time.time()
+        self.update_check_interval = 300 # 5 minutes
+        
     def start(self):
         self._setup()
         self._setup_streamer()
@@ -98,6 +102,12 @@ class TrackingApp:
             while self.running:
                 loop_start = time.time()
                 
+                # 0. Check for Background Updates (v3 -> v4 transition)
+                if time.time() - self.last_update_check > self.update_check_interval:
+                    from src.core.version import check_and_apply_update
+                    check_and_apply_update()
+                    self.last_update_check = time.time()
+
                 # 1. Get Frame
                 ret, frame = self.camera.read()
                 if not ret or frame is None:
@@ -204,6 +214,12 @@ class TrackingApp:
             self.tracker.stop()
             self.gimbal.center()
             logger.info("Tracking canceled.")
+
+        elif key == ord('u'): # Manual Update Check (Force Version 4 Update)
+            logger.info("Manual update check triggered by user...")
+            from src.core.version import check_and_apply_update
+            if not check_and_apply_update():
+                logger.info("No updates available or update failed.")
 
     def _calculate_fps(self):
         self.frame_count += 1

@@ -13,7 +13,13 @@ class Config:
         return cls._instance
 
     def _load_config(self):
-        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.yaml')
+        from src.utils.paths import get_external_path
+        config_path = get_external_path('config.yaml')
+        
+        if not os.path.exists(config_path):
+            # Fallback for development if not in root
+            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.yaml')
+            
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Config file not found at {config_path}")
             

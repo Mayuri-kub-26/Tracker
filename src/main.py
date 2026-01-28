@@ -12,12 +12,11 @@ from src.core.version import print_version_banner, check_for_updates, handle_int
 def main():
     print_version_banner()
     
-    # Check for hardware/software updates via GitHub
-    new_ver = check_for_updates()
-    if new_ver:
-        handle_interactive_update(new_ver)
+    # Updates are now handled by Tracker_Launcher.py
         
-    print("\n>>> System Update Detected: This is Version 3.0.0 <<<\n")
+    from src.core.version import get_version
+    print(f"\n>>> Running Tracker System: Version {get_version()} <<<")
+    print(">>> [V5 FEATURE] AI-Enhanced Target Selection Active <<<\n")
     parser = argparse.ArgumentParser(description="SIYI/Hailo Tracking System")
     parser.add_argument("--mode", default="debug", choices=["debug", "production"], help="Operation mode")
     parser.add_argument("--headless", action="store_true", help="Run without GUI")

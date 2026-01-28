@@ -1,4 +1,4 @@
-qimport subprocess
+import subprocess
 import os
 import sys
 
@@ -7,7 +7,9 @@ def run_command(command):
         result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        print(f"Error running command {' '.join(command)}: {e.stderr}")
+        print(f"Error running command: {command}")
+        if e.stderr:
+            print(f"Details: {e.stderr.strip()}")
         return None
 
 def update_system():
