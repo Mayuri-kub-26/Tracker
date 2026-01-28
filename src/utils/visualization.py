@@ -32,8 +32,11 @@ def draw_tracking_info(frame, bbox, center_x, center_y, error_x, error_y):
     cv2.putText(frame, f"Err: {error_x},{error_y}", (10, 30), 
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
-def draw_hud(frame, mode, fps):
-    cv2.putText(frame, f"Mode: {mode.upper()}", (10, frame.shape[0] - 20), 
+def draw_hud(frame, mode, fps, version="unknown", cpu=0):
+    # Bottom Left: Mode & Version
+    cv2.putText(frame, f"Mode: {mode.upper()} | v{version}", (10, frame.shape[0] - 20), 
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
-    cv2.putText(frame, f"FPS: {fps:.1f}", (frame.shape[1] - 120, frame.shape[0] - 20), 
+    
+    # Bottom Right: FPS & CPU
+    cv2.putText(frame, f"FPS: {fps:.1f} | CPU: {cpu:.0f}%", (frame.shape[1] - 220, frame.shape[0] - 20), 
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)

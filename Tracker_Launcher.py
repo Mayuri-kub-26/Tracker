@@ -151,15 +151,22 @@ def main():
                 os.execv(sys.executable, [sys.executable] + sys.argv)
 
         # 2. Start Application
-        print(f"\n[LAUNCHER] Starting {APP_EXE_NAME}...")
+        print(f"\n[LAUNCHER] Starting {REPO_NAME}...")
         
+        # Priority Logic:
+        # - If in Git Mode: Always run Source (src/main.py) to see instant changes.
+        # - If in Standalone Mode: Try Binary (exe) first, then fallback to Source.
+        
+        should_run_source = is_git_repo()
         exe_path = os.path.join("dist", "TrackerApp", APP_EXE_NAME)
         if not os.path.exists(exe_path):
              exe_path = os.path.join(".", APP_EXE_NAME)
-             
-        if not os.path.exists(exe_path):
+
+        if should_run_source or not os.path.exists(exe_path):
+            print("[LAUNCHER] Running from Source Mode (Developer/Sync active)...")
             app_process = subprocess.Popen([sys.executable, "src/main.py", "--mode", "debug"])
         else:
+            print(f"[LAUNCHER] Running from Binary Mode: {exe_path}")
             app_process = subprocess.Popen([exe_path])
 
         # 3. Monitor

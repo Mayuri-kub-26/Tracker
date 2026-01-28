@@ -8,6 +8,8 @@ from src.detection.detector import HailoDetector
 from src.detection.tracker import ObjectTracker
 from src.utils.visualization import draw_detections, draw_tracking_info, draw_hud
 from src.utils.logger import get_logger
+from src.core.version import get_version
+import psutil
 
 logger = get_logger(__name__)
 
@@ -26,7 +28,8 @@ class TrackingApp:
         
         self.running = False
         self.fps = 0
-        self.frame_count = 0
+        self.cpu_usage = 0
+        self.version = get_version()
         self.frame_count = 0
         self.start_time = time.time()
         self.latest_frame = None
@@ -162,7 +165,7 @@ class TrackingApp:
                 # 4. Display & Input
                 self._calculate_fps()
                 # Always draw HUD for streaming
-                draw_hud(frame, self.mode, self.fps)
+                draw_hud(frame, self.mode, self.fps, version=self.version, cpu=self.cpu_usage)
                 
                 # Store processed frame for streaming
                 self.latest_frame = frame.copy()
@@ -226,6 +229,7 @@ class TrackingApp:
         elapsed = time.time() - self.start_time
         if elapsed > 1.0:
             self.fps = self.frame_count / elapsed
+            self.cpu_usage = psutil.cpu_percent()
             self.frame_count = 0
             self.start_time = time.time()
 

@@ -16,7 +16,7 @@ def main():
         
     from src.core.version import get_version
     print(f"\n>>> Running Tracker System: Version {get_version()} <<<")
-    print(">>> [V5 FEATURE] AI-Enhanced Target Selection Active <<<\n")
+    print(">>> [V6 FEATURE] Real-time System Health Telemetry Active <<<\n")
     parser = argparse.ArgumentParser(description="SIYI/Hailo Tracking System")
     parser.add_argument("--mode", default="debug", choices=["debug", "production"], help="Operation mode")
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
