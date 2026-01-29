@@ -1,0 +1,65 @@
+name: Auto Version & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'VERSION'
+      - '.github/**'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Get Current Version
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Bump Patch Version
+        id: bump
+        run: |
+          VERSION=${{ steps.get_version.outputs.current_version }}
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          new_patch=$((patch + 1))
+          NEW_VERSION="$major.$minor.$new_patch"
+          echo "v$NEW_VERSION" > VERSION
+          echo "new_version=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumping to: v$NEW_VERSION"
+
+      - name: Commit and Push Version Change
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          git push
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump.outputs.new_version }}
+          name: Release ${{ steps.bump.outputs.new_version }}
+          body: |
+            Automated release for version ${{ steps.bump.outputs.new_version }}.
+            Triggered by commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
