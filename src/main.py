@@ -12,7 +12,7 @@ def read_version():
 
 print("=================================")
 print("Running Tracker Version:", read_version())
-print("Here is the perfect n new updated verison")
+print("Here is the new updated verison")
 print("=================================")
 
 
