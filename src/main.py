@@ -12,7 +12,7 @@ def read_version():
 
 print("=================================")
 print("Running Tracker Version:", read_version())
-# print("As it is a new version all the upgraded versions will be seen in this version")
+print("This is the version with new upgradations")
 print("=================================")
 
 
